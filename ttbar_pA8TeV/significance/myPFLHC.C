@@ -329,28 +329,21 @@ HypoTestResult* myPFLHC::GetHypoTest() const {
    if (!data || !pdf) return 0;
 
    if (fNullParams.getSize() == 0) return 0; 
-   oocoutI((TObject*)0,Minimization) << "WE ARE HERE!!!!!!!!!!!!" << std::endl; // FIXME
 
    // make a clone and ordered list since a vector will be associated to keep parameter values
    // clone the list since first fit will changes the fNullParams values
    RooArgList poiList; 
    poiList.addClone(fNullParams); // make a clone list 
-   std::cout << __LINE__ << " " << poiList.getSize() << std::endl; // FIXME
-   poiList.Print("v"); // FIXME
 
 
    // do a global fit
    RooAbsReal * nll = DoGlobalFit();
-   std::cout << __LINE__ << " " << poiList.getSize() << std::endl; // FIXME
    if (!nll) return 0;
-   std::cout << __LINE__ << " " << poiList.getSize() << std::endl; // FIXME
    
-   std::cout << __LINE__ << " " << poiList.getSize() << std::endl; // FIXME
    if (!fFitResult) {
       delete nll;
       return 0; 
    }
-   std::cout << __LINE__ << " " << poiList.getSize() << std::endl; // FIXME
    
    RooArgSet* constrainedParams = pdf->getParameters(*data);
    RemoveConstantParameters(constrainedParams);
@@ -360,11 +353,8 @@ HypoTestResult* myPFLHC::GetHypoTest() const {
    Double_t nlloffset = (RooStats::IsNLLOffset() ) ? nll->getVal() - nLLatMLE : 0; 
 
    // set POI to given values, set constant, calculate conditional MLE
-   std::cout << __LINE__ << " " << poiList.getSize() << std::endl; // FIXME
    std::vector<double> oldValues(poiList.getSize() ); 
-   std::cout << __LINE__ << " " << poiList.getSize() << std::endl; // FIXME
    for (unsigned int i = 0; i < oldValues.size(); ++i) { 
-      std::cout << "AAAARGH" <<  poiList[i].GetName() << std::endl;
       RooRealVar * mytarget = (RooRealVar*) constrainedParams->find(poiList[i].GetName());
       if (mytarget) { 
          oldValues[i] = mytarget->getVal(); 
