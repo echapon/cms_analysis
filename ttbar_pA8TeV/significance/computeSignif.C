@@ -1,5 +1,18 @@
 #include "StandardHypoTestDemo.C"
 
+void setConstant(RooWorkspace *w) {
+   RooArgSet allVars = w->allVars();
+   TIterator* it = allVars.createIterator();
+   RooRealVar *theVar = (RooRealVar*) it->Next();
+   while (theVar) {
+      TString tvn = theVar->GetName();
+      if (!(tvn == "mjj" || tvn == "sample" || tvn == "xsec" || tvn == "eb")) {
+         theVar->setConstant(kTRUE);
+      }
+      theVar = (RooRealVar*) it->Next();
+   }
+};
+
 void computeSignif(const char* filename = "finalfitworkskace_v2.root",
                           const char* workspaceName = "w",
                           const char* modelSBName = "modelSB",
@@ -48,17 +61,22 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    RooProdPdf modelc("modelc_combined_mjj","model with constraint",RooArgSet(*model,ebconstraint)) ;
    w->import(modelc);
 
-   // reduce the data to exclude categories with fake leptons
-   RooDataSet *dataR = (RooDataSet*) w->data("data")->reduce("sample==sample::e1l4j2b || sample==sample::e1l4j1b1q || sample==sample::e1l4j2q || sample==sample::mu1l4j2b || sample==sample::mu1l4j1b1q || sample==sample::mu1l4j2q");
-   dataR->SetName("dataReduced");
-   w->import(*dataR);
+   // // reduce the data to exclude categories with fake leptons
+   // RooDataSet *dataR = (RooDataSet*) w->data("data")->reduce("sample==sample::e1l4j2b || sample==sample::e1l4j1b1q || sample==sample::e1l4j2q || sample==sample::mu1l4j2b || sample==sample::mu1l4j1b1q || sample==sample::mu1l4j2q");
+   // dataR->SetName("dataReduced");
+   // w->import(*dataR);
+   RooDataSet *data = (RooDataSet*) w->data("data");
 
-   // S+B model
+   ///////////////
+   // S+B model //
+   ///////////////
    ModelConfig *msb = new ModelConfig(modelSBName);
    msb->SetWorkspace(*w);
    msb->SetPdf(*(w->pdf("modelc_combined_mjj")));
    RooRealVar *thePoi = (RooRealVar*) w->var("xsec");
    msb->SetParametersOfInterest(RooArgSet(*thePoi));
+
+   // nuisance parameters
    RooArgSet *nuis = new RooArgSet();
    // nuis->add(*(w->var("eb")));
    RooArgSet allVars = w->allVars();
@@ -66,32 +84,35 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    RooRealVar *theVar = (RooRealVar*) it->Next();
    while (theVar) {
       if (!(theVar->isConstant()) && (theVar->GetName() != thePoi->GetName())) {
-         // if (TString(theVar->GetName()) == "eb") 
+         if (TString(theVar->GetName()) == "eb") 
             nuis->add(*theVar);
-         // else 
-            // theVar->setConstant(kTRUE);
       }
       theVar = (RooRealVar*) it->Next();
    }
    msb->SetNuisanceParameters(*nuis);
+
+   // observables
    RooArgSet *obs = new RooArgSet();
    obs->add(*(w->var("mjj")));
    // RooCategory *cat = w->cat("sample");
    // cat->setRange("default","e1l4j2b,e1l4j1b1q,e1l4j2q,mu1l4j2b,mu1l4j1b1q,mu1l4j2q");
-   RooCategory *cat = new RooCategory("sample","sample");
-   cat->defineType("e1l4j2b");
-   cat->defineType("e1l4j1b1q");
-   cat->defineType("e1l4j2q");
-   cat->defineType("mu1l4j2b");
-   cat->defineType("mu1l4j1b1q");
-   cat->defineType("mu1l4j2q");
-   obs->add(*cat);
+   // RooCategory *cat = new RooCategory("sample","sample");
+   // cat->defineType("e1l4j2b");
+   // cat->defineType("e1l4j1b1q");
+   // cat->defineType("e1l4j2q");
+   // cat->defineType("mu1l4j2b");
+   // cat->defineType("mu1l4j1b1q");
+   // cat->defineType("mu1l4j2q");
+   // obs->add(*cat);
    msb->SetObservables(*obs);
+
+   // snapshot
    if (w->getSnapshot("fitresults_combined")) { // check if the snapshot exists
       msb->SetSnapshot(*(w->getSnapshot("fitresult_combined")));
+      setConstant(w);
    } else { // else produce it
       RooAbsPdf *modelc = w->pdf("modelc_combined_mjj");
-      modelc->fitTo(*dataR,NumCPU(2),Minos()); // add minos
+      modelc->fitTo(*data,NumCPU(2),Minos()); // add minos
       // // do the fit and plot the LH profile too
       // RooAbsReal * pNll = msb->GetPdf()->createNLL( *dataR,NumCPU(2) );
       // RooMinuit(*pNll).migrad(); // minimize likelihood wrt all parameters before making plots
@@ -107,6 +128,7 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
       // cpoi->SaveAs("cpoi.pdf");
       RooArgSet *newpars = modelc->getParameters(*(w->var("mjj")));
       w->saveSnapshot("fitresults_combined",*newpars,kTRUE);
+      setConstant(w);
       msb->SetSnapshot(*newpars);
    }
    w->import(*msb);
@@ -124,7 +146,7 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    } // else produce it
    w->var("xsec")->setVal(0);
    w->var("xsec")->setConstant(kTRUE);
-   modelc.fitTo(*dataR,NumCPU(2),Minos(true));
+   modelc.fitTo(*data,NumCPU(2),Minos(true));
    RooArgSet *newpars = modelc.getParameters(*(w->var("mjj")));
    w->saveSnapshot("fitresults_combined_null",*newpars,kTRUE);
    mb->SetSnapshot(*newpars);

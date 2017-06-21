@@ -4,14 +4,14 @@
 #include "RooProdPdf.h"
 #include "RooDataSet.h"
 #include "RooRealVar.h"
-#include "RooStats/ProfileLikelihoodCalculator.h"
+#include "myPFLHC.C"
 #include "RooStats/HypoTestResult.h"
 #include "TFile.h"
 
 using namespace RooFit;
 using namespace RooStats;
 
-HypoTestResult* testProfLH(const char *filename="finalfitworkskace_v2.root") {
+HypoTestResult* testMyPFLHC(const char *filename="finalfitworkskace_v2.root") {
    TFile *f = TFile::Open(filename);
    RooWorkspace *w = (RooWorkspace*) f->Get("w");
    
@@ -29,16 +29,19 @@ HypoTestResult* testProfLH(const char *filename="finalfitworkskace_v2.root") {
 
    model->fitTo(*data,NumCPU(2),Minos(RooArgSet(*thePoi)),Extended(kTRUE),
          ExternalConstraints(RooArgSet(ebconstraint)),GlobalObservables(RooArgSet(eb_nom))); // add minos
-   cout << __LINE__ << endl;
-   ProfileLikelihoodCalculator pl(*data,modelc,RooArgSet(*thePoi));
+   myPFLHC pl(*data,*model,RooArgSet(*thePoi));
    // pl.SetGlobalObservables(RooArgSet(eb_nom));
    pl.SetNuisanceParameters(RooArgSet(*(w->var("eb"))));
-   cout << __LINE__ << endl;
-   pl.GetInterval();
-   cout << __LINE__ << endl;
+   pl.SetMinos(true);
+   pl.SetExtended(true);
+   pl.SetNCPU(4);
+   // pl.SetConstraints(RooArgSet(ebconstraint));
+   pl.SetConstraints(new RooArgSet(*(w->function("ebconstraint"))));
+   RooArgSet *nullParams = new RooArgSet(*thePoi);
+   nullParams->setRealValue("xsec",0);
+   pl.SetNullParameters(*nullParams);
+   // pl.GetInterval();
    HypoTestResult *r = pl.GetHypoTest();
-   cout << __LINE__ << endl;
    r->Print();
-   cout << __LINE__ << endl;
    return r;
 }
