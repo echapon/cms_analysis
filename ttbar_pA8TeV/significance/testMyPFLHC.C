@@ -8,8 +8,11 @@
 #include "RooStats/HypoTestResult.h"
 #include "TFile.h"
 
+#include <iostream>
+
 using namespace RooFit;
 using namespace RooStats;
+using namespace std;
 
 // GLOBAL SYST ON xsec
 double gGlobalSyst = 0.25;
@@ -85,6 +88,18 @@ HypoTestResult* testMyPFLHC(const char *filename="finalfitworkskace_v2.root") {
    HypoTestResult *r = pl2.GetHypoTest();
    r->Print();
 
+    //Get the interval
+   LikelihoodInterval* plInt = pl2.GetInterval();
+   cout << "PLC interval is [" << plInt->LowerLimit(*thePoi) << ", " << 
+      plInt->UpperLimit(*thePoi) << "]" << endl;
+
+   TCanvas dataCanvas("dataCanvas");
+
+   LikelihoodIntervalPlot plotInt((LikelihoodInterval*)plInt);
+   plotInt.SetTitle("Profile Likelihood Ratio");
+   plotInt.SetMaximum(3.);
+   plotInt.Draw();
+   dataCanvas.SaveAs("interval.pdf");
 
    return r;
 }

@@ -1,5 +1,9 @@
 #include "StandardHypoTestDemo.C"
 
+int nCPU = 4;
+double eb0 = 0.59;
+double eberr = 0.059;
+
 void setConstant(RooWorkspace *w) {
    RooArgSet allVars = w->allVars();
    TIterator* it = allVars.createIterator();
@@ -41,7 +45,6 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
       cout <<"workspace not found" << endl;
       return;
    }
-   w->Print();
 
    optHT.name = filename;
 
@@ -49,17 +52,30 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    // load values from combined fit
    w->loadSnapshot("fitresult_combined");
    // set expected cross section
-   optHT.poiValue = 56.6;                    // change poi snapshot value for S+B model (needed for expected p0 values)
+   // optHT.poiValue = 56.6;                    // change poi snapshot value for S+B model (needed for expected p0 values)
 
    // C r e a t e   c o n s t r a i n t   p d f 
    // -----------------------------------------
 
    // Construct Gaussian constraint p.d.f on parameter eb at 0.59 with resolution of 0.1
-   RooGaussian ebconstraint("ebconstraint_pdf","ebconstraint_pdf",*(w->var("eb")),RooConst(0.59),RooConst(0.059)) ;
+   // the constraint
+   w->factory(Form("Gaussian::ebconstraint_pdf(eb,eb0[%f,0,1],%f)",eb0,eberr));
+   w->var("eb0")->setConstant(kTRUE);
+
    // Multiply constraint with p.d.f
+   // for each component of the multi pdf
+   w->factory("PROD::model_mjj_e1l4j2b_ebconstr(model_mjj_e1l4j2b, ebconstraint_pdf)");
+   w->factory("PROD::model_mjj_e1l4j1b1q_ebconstr(model_mjj_e1l4j1b1q, ebconstraint_pdf)");
+   w->factory("PROD::model_mjj_e1l4j2q_ebconstr(model_mjj_e1l4j2q, ebconstraint_pdf)");
+   w->factory("PROD::model_mjj_mu1l4j2b_ebconstr(model_mjj_mu1l4j2b, ebconstraint_pdf)");
+   w->factory("PROD::model_mjj_mu1l4j1b1q_ebconstr(model_mjj_mu1l4j1b1q, ebconstraint_pdf)");
+   w->factory("PROD::model_mjj_mu1l4j2q_ebconstr(model_mjj_mu1l4j2q, ebconstraint_pdf)");
+   w->factory("SIMUL::model_combined_mjj_ebconstr(sample, e1l4j2b=model_mjj_e1l4j2b_ebconstr, e1l4j1b1q=model_mjj_e1l4j1b1q_ebconstr, e1l4j2q=model_mjj_e1l4j2q_ebconstr, mu1l4j2b=model_mjj_mu1l4j2b_ebconstr, mu1l4j1b1q=model_mjj_mu1l4j1b1q_ebconstr, mu1l4j2q=model_mjj_mu1l4j2q_ebconstr)");
+
    RooAbsPdf *model = w->pdf("model_combined_mjj");
-   RooProdPdf modelc("modelc_combined_mjj","model with constraint",RooArgSet(*model,ebconstraint)) ;
-   w->import(modelc);
+   RooAbsPdf *modelc = w->pdf("model_combined_mjj_ebconstr");
+
+   w->Print();
 
    // // reduce the data to exclude categories with fake leptons
    // RooDataSet *dataR = (RooDataSet*) w->data("data")->reduce("sample==sample::e1l4j2b || sample==sample::e1l4j1b1q || sample==sample::e1l4j2q || sample==sample::mu1l4j2b || sample==sample::mu1l4j1b1q || sample==sample::mu1l4j2q");
@@ -67,43 +83,36 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    // w->import(*dataR);
    RooDataSet *data = (RooDataSet*) w->data("data");
 
+
    ///////////////
    // S+B model //
    ///////////////
    ModelConfig *msb = new ModelConfig(modelSBName);
    msb->SetWorkspace(*w);
-   msb->SetPdf(*(w->pdf("modelc_combined_mjj")));
+   msb->SetPdf(*modelc);
    RooRealVar *thePoi = (RooRealVar*) w->var("xsec");
    msb->SetParametersOfInterest(RooArgSet(*thePoi));
 
    // nuisance parameters
    RooArgSet *nuis = new RooArgSet();
-   // nuis->add(*(w->var("eb")));
-   RooArgSet allVars = w->allVars();
-   TIterator* it = allVars.createIterator();
-   RooRealVar *theVar = (RooRealVar*) it->Next();
-   while (theVar) {
-      if (!(theVar->isConstant()) && (theVar->GetName() != thePoi->GetName())) {
-         if (TString(theVar->GetName()) == "eb") 
-            nuis->add(*theVar);
-      }
-      theVar = (RooRealVar*) it->Next();
-   }
+   nuis->add(*(w->var("eb")));
+   // RooArgSet allVars = w->allVars();
+   // TIterator* it = allVars.createIterator();
+   // RooRealVar *theVar = (RooRealVar*) it->Next();
+   // while (theVar) {
+   //    if (!(theVar->isConstant()) && (theVar->GetName() != thePoi->GetName())) {
+   //       if (TString(theVar->GetName()) == "eb") 
+   //          nuis->add(*theVar);
+   //    }
+   //    theVar = (RooRealVar*) it->Next();
+   // }
    msb->SetNuisanceParameters(*nuis);
 
    // observables
    RooArgSet *obs = new RooArgSet();
    obs->add(*(w->var("mjj")));
-   // RooCategory *cat = w->cat("sample");
-   // cat->setRange("default","e1l4j2b,e1l4j1b1q,e1l4j2q,mu1l4j2b,mu1l4j1b1q,mu1l4j2q");
-   // RooCategory *cat = new RooCategory("sample","sample");
-   // cat->defineType("e1l4j2b");
-   // cat->defineType("e1l4j1b1q");
-   // cat->defineType("e1l4j2q");
-   // cat->defineType("mu1l4j2b");
-   // cat->defineType("mu1l4j1b1q");
-   // cat->defineType("mu1l4j2q");
-   // obs->add(*cat);
+   RooCategory *cat = w->cat("sample");
+   obs->add(*cat);
    msb->SetObservables(*obs);
 
    // snapshot
@@ -111,8 +120,7 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
       msb->SetSnapshot(*(w->getSnapshot("fitresult_combined")));
       setConstant(w);
    } else { // else produce it
-      RooAbsPdf *modelc = w->pdf("modelc_combined_mjj");
-      modelc->fitTo(*data,NumCPU(2),Minos()); // add minos
+      modelc->fitTo(*data,NumCPU(nCPU),Minos(RooArgSet(*thePoi)),Extended()); // add minos
       // // do the fit and plot the LH profile too
       // RooAbsReal * pNll = msb->GetPdf()->createNLL( *dataR,NumCPU(2) );
       // RooMinuit(*pNll).migrad(); // minimize likelihood wrt all parameters before making plots
@@ -136,7 +144,7 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    // B only model
    ModelConfig *mb = new ModelConfig(modelBName);
    mb->SetWorkspace(*w);
-   mb->SetPdf(*(w->pdf("modelc_combined_mjj")));
+   mb->SetPdf(*modelc);
    thePoi->setVal(0);
    mb->SetParametersOfInterest(RooArgSet(*thePoi));
    mb->SetNuisanceParameters(*nuis);
@@ -146,12 +154,15 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    } // else produce it
    w->var("xsec")->setVal(0);
    w->var("xsec")->setConstant(kTRUE);
-   modelc.fitTo(*data,NumCPU(2),Minos(true));
-   RooArgSet *newpars = modelc.getParameters(*(w->var("mjj")));
+   modelc->fitTo(*data,NumCPU(nCPU),Minos(RooArgSet(*thePoi)),Extended());
+   RooArgSet *newpars = modelc->getParameters(*(w->var("mjj")));
    w->saveSnapshot("fitresults_combined_null",*newpars,kTRUE);
    mb->SetSnapshot(*newpars);
    w->var("xsec")->setConstant(kFALSE);
    w->import(*mb);
+
+   // msb->Print("v");
+   // mb->Print("v");
 
    StandardHypoTestDemo(w, modelSBName, modelBName, dataName, calcType, testStatType, ntoys, useNC, nuisPriorName);
 };
