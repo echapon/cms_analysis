@@ -26,7 +26,8 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
                           int testStatType = 3,   /* 0 LEP, 1 TeV, 2 LHC, 3 LHC - one sided*/
                           int ntoys = 100,
                           bool useNC = false,
-                          const char * nuisPriorName = 0)
+                          const char * nuisPriorName = 0,
+                          int seed = -1)
 {
    // Try to open the file
    TFile *file = TFile::Open(filename);
@@ -165,5 +166,5 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    w->import(*mb);
 
    // StandardHypoTestDemo(w, modelSBName, modelBName, dataName, calcType, testStatType, ntoys, useNC, nuisPriorName);
-   StandardHypoTestDemo(w, modelSBName, "", dataName, calcType, testStatType, ntoys, useNC, nuisPriorName);
+   StandardHypoTestDemo(w, modelSBName, "", dataName, calcType, testStatType, ntoys, useNC, nuisPriorName, seed);
 };

@@ -82,7 +82,8 @@ void StandardHypoTestDemo(RooWorkspace *w,
                           int testStatType = 3,   /* 0 LEP, 1 TeV, 2 LHC, 3 LHC - one sided*/
                           int ntoys = 5000,
                           bool useNC = false,
-                          const char * nuisPriorName = 0)
+                          const char * nuisPriorName = 0,
+                          int seed=-1)
 {
 
    bool noSystematics = optHT.noSystematics;
@@ -130,7 +131,7 @@ void StandardHypoTestDemo(RooWorkspace *w,
    ProfileLikelihoodTestStat::SetAlwaysReuseNLL(true);
    RatioOfProfiledLikelihoodsTestStat::SetAlwaysReuseNLL(true);
 
-   //RooRandom::randomGenerator()->SetSeed(0);
+   if (seed>0) RooRandom::randomGenerator()->SetSeed(0);
 
    // to change minimizers
    // ~~~{.bash}
@@ -443,7 +444,8 @@ void StandardHypoTestDemo(const char* infile = "",
                           int testStatType = 3,   /* 0 LEP, 1 TeV, 2 LHC, 3 LHC - one sided*/
                           int ntoys = 5000,
                           bool useNC = false,
-                          const char * nuisPriorName = 0)
+                          const char * nuisPriorName = 0,
+                          int seed = -1)
 {
   // -------------------------------------------------------
   // First part is just to access a user-defined file
@@ -495,6 +497,6 @@ void StandardHypoTestDemo(const char* infile = "",
 
    optHT.name = infile;
 
-   StandardHypoTestDemo(w, modelSBName, modelBName, dataName, calcType, testStatType, ntoys, useNC, nuisPriorName);
+   StandardHypoTestDemo(w, modelSBName, modelBName, dataName, calcType, testStatType, ntoys, useNC, nuisPriorName, seed);
 };
 
