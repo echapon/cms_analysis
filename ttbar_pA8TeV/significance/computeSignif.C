@@ -18,16 +18,16 @@ void setConstant(RooWorkspace *w) {
 };
 
 void computeSignif(const char* filename = "finalfitworkskace_v2.root",
+                          int seed = -1,
                           const char* workspaceName = "w",
                           const char* modelSBName = "modelSB",
                           const char* modelBName = "modelB",
                           const char* dataName = "data",
                           int calcType = 0, /* 0 freq 1 hybrid, 2 asymptotic */
                           int testStatType = 3,   /* 0 LEP, 1 TeV, 2 LHC, 3 LHC - one sided*/
-                          int ntoys = 100,
+                          int ntoys = 1000,
                           bool useNC = false,
-                          const char * nuisPriorName = 0,
-                          int seed = -1)
+                          const char * nuisPriorName = 0)
 {
    // Try to open the file
    TFile *file = TFile::Open(filename);
@@ -121,6 +121,10 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
       msb->SetSnapshot(*(w->getSnapshot("fitresult_combined")));
       // setConstant(w);
    } else { // else produce it
+      thePoi->setVal(54.);
+      thePoi->setConstant(kTRUE);
+      modelc->fitTo(*data,NumCPU(nCPU),Minos(RooArgSet(*thePoi)),Extended()); // add minos
+      thePoi->setConstant(kFALSE);
       modelc->fitTo(*data,NumCPU(nCPU),Minos(RooArgSet(*thePoi)),Extended()); // add minos
       // // do the fit and plot the LH profile too
       // RooAbsReal * pNll = msb->GetPdf()->createNLL( *dataR,NumCPU(2) );
