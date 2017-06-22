@@ -67,7 +67,7 @@ struct HypoTestOptions {
    double poiValue = -1;                    // change poi snapshot value for S+B model (needed for expected p0 values)
    int  printLevel=0;
    bool generateBinned = false;             // for binned generation
-   bool useProof = true;                // use Proof
+   bool useProof = false;                // use Proof
    bool enableDetailedOutput = false;    // for detailed output
    TString name = "output";
 };
@@ -341,6 +341,8 @@ void StandardHypoTestDemo(RooWorkspace *w,
 
    }
 
+   cout << sbModel << " " << bModel << endl;
+   cout << sbModel->GetWorkspace() << " " << bModel->GetWorkspace() << endl;
    HypoTestResult *  htr = hypoCalc->GetHypoTest();
    htr->SetPValueIsRightTail(true);
    htr->SetBackgroundAsAlt(false);

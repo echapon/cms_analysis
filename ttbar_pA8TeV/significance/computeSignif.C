@@ -118,7 +118,7 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    // snapshot
    if (w->getSnapshot("fitresults_combined")) { // check if the snapshot exists
       msb->SetSnapshot(*(w->getSnapshot("fitresult_combined")));
-      setConstant(w);
+      // setConstant(w);
    } else { // else produce it
       modelc->fitTo(*data,NumCPU(nCPU),Minos(RooArgSet(*thePoi)),Extended()); // add minos
       // // do the fit and plot the LH profile too
@@ -136,7 +136,8 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
       // cpoi->SaveAs("cpoi.pdf");
       RooArgSet *newpars = modelc->getParameters(*(w->var("mjj")));
       w->saveSnapshot("fitresults_combined",*newpars,kTRUE);
-      setConstant(w);
+      // setConstant(w);
+      // msb->SetSnapshot(*((RooArgSet*) newpars->selectByName("xsec")));
       msb->SetSnapshot(*newpars);
    }
    w->import(*msb);
@@ -155,14 +156,14 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    w->var("xsec")->setVal(0);
    w->var("xsec")->setConstant(kTRUE);
    modelc->fitTo(*data,NumCPU(nCPU),Minos(RooArgSet(*thePoi)),Extended());
+   w->var("xsec")->setConstant(kFALSE);
    RooArgSet *newpars = modelc->getParameters(*(w->var("mjj")));
    w->saveSnapshot("fitresults_combined_null",*newpars,kTRUE);
    mb->SetSnapshot(*newpars);
-   w->var("xsec")->setConstant(kFALSE);
+   // mb->SetSnapshot(*((RooArgSet*) newpars->selectByName("xsec")));
+   mb->SetSnapshot(*newpars);
    w->import(*mb);
 
-   // msb->Print("v");
-   // mb->Print("v");
-
-   StandardHypoTestDemo(w, modelSBName, modelBName, dataName, calcType, testStatType, ntoys, useNC, nuisPriorName);
+   // StandardHypoTestDemo(w, modelSBName, modelBName, dataName, calcType, testStatType, ntoys, useNC, nuisPriorName);
+   StandardHypoTestDemo(w, modelSBName, "", dataName, calcType, testStatType, ntoys, useNC, nuisPriorName);
 };
