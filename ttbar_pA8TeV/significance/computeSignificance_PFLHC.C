@@ -42,58 +42,38 @@ void computeSignificance_PFLHC(const char *filename="finalfitworkskace_v2.root",
       w->var("jsf")->setConstant(kFALSE);
       w->import(jsfconstraint);
 
-      val = w->var("f_smjj_e1l4j2b")->getVal();
-      RooGaussian f_smjj_e1l4j2bconstraint("f_smjj_e1l4j2bconstraint_pdf","f_smjj_e1l4j2bconstraint_pdf",*(w->var("f_smjj_e1l4j2b")),RooConst(val),RooConst(f_smjj_err*val)) ;
-      w->var("f_smjj_e1l4j2b")->setConstant(kFALSE);
-      w->import(f_smjj_e1l4j2bconstraint);
-      
-      val = w->var("f_smjj_e1l4j1b1q")->getVal();
-      RooGaussian f_smjj_e1l4j1b1qconstraint("f_smjj_e1l4j1b1qconstraint_pdf","f_smjj_e1l4j1b1qconstraint_pdf",*(w->var("f_smjj_e1l4j1b1q")),RooConst(val),RooConst(f_smjj_err*val)) ;
-      w->var("f_smjj_e1l4j1b1q")->setConstant(kFALSE);
-      w->import(f_smjj_e1l4j1b1qconstraint);
-      
-      val = w->var("f_smjj_e1l4j2q")->getVal();
-      RooGaussian f_smjj_e1l4j2qconstraint("f_smjj_e1l4j2qconstraint_pdf","f_smjj_e1l4j2qconstraint_pdf",*(w->var("f_smjj_e1l4j2q")),RooConst(val),RooConst(f_smjj_err*val)) ;
-      w->var("f_smjj_e1l4j2q")->setConstant(kFALSE);
-      w->import(f_smjj_e1l4j2qconstraint);
-
-      val = w->var("f_smjj_mu1l4j2b")->getVal();
-      RooGaussian f_smjj_mu1l4j2bconstraint("f_smjj_mu1l4j2bconstraint_pdf","f_smjj_mu1l4j2bconstraint_pdf",*(w->var("f_smjj_mu1l4j2b")),RooConst(val),RooConst(f_smjj_err*val)) ;
-      w->var("f_smjj_mu1l4j2b")->setConstant(kFALSE);
-      w->import(f_smjj_mu1l4j2bconstraint);
-      
-      val = w->var("f_smjj_mu1l4j1b1q")->getVal();
-      RooGaussian f_smjj_mu1l4j1b1qconstraint("f_smjj_mu1l4j1b1qconstraint_pdf","f_smjj_mu1l4j1b1qconstraint_pdf",*(w->var("f_smjj_mu1l4j1b1q")),RooConst(val),RooConst(val*f_smjj_err)) ;
-      w->var("f_smjj_mu1l4j1b1q")->setConstant(kFALSE);
-      w->import(f_smjj_mu1l4j1b1qconstraint);
-      
-      val = w->var("f_smjj_mu1l4j2q")->getVal();
-      RooGaussian f_smjj_mu1l4j2qconstraint("f_smjj_mu1l4j2qconstraint_pdf","f_smjj_mu1l4j2qconstraint_pdf",*(w->var("f_smjj_mu1l4j2q")),RooConst(val),RooConst(f_smjj_err*val)) ;
-      w->var("f_smjj_mu1l4j2q")->setConstant(kFALSE);
-      w->import(f_smjj_mu1l4j2qconstraint);
+      // constraints on the correct/wrong fractions
+      w->factory(Form("Gaussian::thetaconstraint(theta[1,0,2],theta0[1],thetaerr[%f])",f_smjj_err));
 
       // now the total constraint
-      w->factory("PROD::constraints_all("
-         "ebconstraint_pdf,jsfconstraint_pdf,"
-         "f_smjj_e1l4j2bconstraint_pdf,f_smjj_e1l4j1b1qconstraint_pdf,f_smjj_e1l4j2qconstraint_pdf,"
-         "f_smjj_mu1l4j2bconstraint_pdf,f_smjj_mu1l4j1b1qconstraint_pdf,f_smjj_mu1l4j2qconstraint_pdf"
-         ")");
+      w->factory("PROD::constraints_all(ebconstraint_pdf,jsfconstraint_pdf,thetaconstraint)");
+
+      // make the modified model
+      w->factory("PROD::model_mjj_e1l4j2b_constr(model_mjj_e1l4j2b, constraints_all)");
+      w->factory("PROD::model_mjj_e1l4j1b1q_constr(model_mjj_e1l4j1b1q, constraints_all)");
+      w->factory("PROD::model_mjj_e1l4j2q_constr(model_mjj_e1l4j2q, constraints_all)");
+      w->factory("PROD::model_mjj_mu1l4j2b_constr(model_mjj_mu1l4j2b, constraints_all)");
+      w->factory("PROD::model_mjj_mu1l4j1b1q_constr(model_mjj_mu1l4j1b1q, constraints_all)");
+      w->factory("PROD::model_mjj_mu1l4j2q_constr(model_mjj_mu1l4j2q, constraints_all)");
+      w->factory("SIMUL::model_combined_mjj_constr0(sample, e1l4j2b=model_mjj_e1l4j2b_constr, e1l4j1b1q=model_mjj_e1l4j1b1q_constr, e1l4j2q=model_mjj_e1l4j2q_constr, mu1l4j2b=model_mjj_mu1l4j2b_constr, mu1l4j1b1q=model_mjj_mu1l4j1b1q_constr, mu1l4j2q=model_mjj_mu1l4j2q_constr)");
+      w->factory("EDIT::model_combined_mjj_constr1(model_combined_mjj_constr0,f_smjj_e1l4j2b=expr('f_smjj_e1l4j2b*theta',f_smjj_e1l4j2b,theta))");
+      w->factory("EDIT::model_combined_mjj_constr2(model_combined_mjj_constr1,f_smjj_e1l4j1b1q=expr('f_smjj_e1l4j1b1q*theta',f_smjj_e1l4j1b1q,theta))");
+      w->factory("EDIT::model_combined_mjj_constr3(model_combined_mjj_constr2,f_smjj_e1l4j2q=expr('f_smjj_e1l4j2q*theta',f_smjj_e1l4j2q,theta))");
+      w->factory("EDIT::model_combined_mjj_constr4(model_combined_mjj_constr3,f_smjj_mu1l4j2b=expr('f_smjj_mu1l4j2b*theta',f_smjj_mu1l4j2b,theta))");
+      w->factory("EDIT::model_combined_mjj_constr5(model_combined_mjj_constr4,f_smjj_mu1l4j1b1q=expr('f_smjj_mu1l4j1b1q*theta',f_smjj_mu1l4j1b1q,theta))");
+      w->factory("EDIT::model_combined_mjj_constr(model_combined_mjj_constr5,f_smjj_mu1l4j2q=expr('f_smjj_mu1l4j2q*theta',f_smjj_mu1l4j2q,theta))");
    } else {
-      RooGaussian *constraints_all = new RooGaussian(ebconstraint,"constraints_all");
-      w->import(*constraints_all);
+      w->factory("PROD::model_mjj_e1l4j2b_constr(model_mjj_e1l4j2b, ebconstraint)");
+      w->factory("PROD::model_mjj_e1l4j1b1q_constr(model_mjj_e1l4j1b1q, ebconstraint)");
+      w->factory("PROD::model_mjj_e1l4j2q_constr(model_mjj_e1l4j2q, ebconstraint)");
+      w->factory("PROD::model_mjj_mu1l4j2b_constr(model_mjj_mu1l4j2b, ebconstraint)");
+      w->factory("PROD::model_mjj_mu1l4j1b1q_constr(model_mjj_mu1l4j1b1q, ebconstraint)");
+      w->factory("PROD::model_mjj_mu1l4j2q_constr(model_mjj_mu1l4j2q, ebconstraint)");
+      w->factory("SIMUL::model_combined_mjj_constr(sample, e1l4j2b=model_mjj_e1l4j2b_constr, e1l4j1b1q=model_mjj_e1l4j1b1q_constr, e1l4j2q=model_mjj_e1l4j2q_constr, mu1l4j2b=model_mjj_mu1l4j2b_constr, mu1l4j1b1q=model_mjj_mu1l4j1b1q_constr, mu1l4j2q=model_mjj_mu1l4j2q_constr)");
    }
 
    RooAbsPdf *constraints_all = w->pdf("constraints_all");
 
-   // Multiply constraint with p.d.f
-   // for each component of the multi pdf
-   w->factory("PROD::model_mjj_e1l4j2b_constr(model_mjj_e1l4j2b, constraints_all)");
-   w->factory("PROD::model_mjj_e1l4j1b1q_constr(model_mjj_e1l4j1b1q, constraints_all)");
-   w->factory("PROD::model_mjj_e1l4j2q_constr(model_mjj_e1l4j2q, constraints_all)");
-   w->factory("PROD::model_mjj_mu1l4j2b_constr(model_mjj_mu1l4j2b, constraints_all)");
-   w->factory("PROD::model_mjj_mu1l4j1b1q_constr(model_mjj_mu1l4j1b1q, constraints_all)");
-   w->factory("PROD::model_mjj_mu1l4j2q_constr(model_mjj_mu1l4j2q, constraints_all)");
-   w->factory("SIMUL::model_combined_mjj_constr(sample, e1l4j2b=model_mjj_e1l4j2b_constr, e1l4j1b1q=model_mjj_e1l4j1b1q_constr, e1l4j2q=model_mjj_e1l4j2q_constr, mu1l4j2b=model_mjj_mu1l4j2b_constr, mu1l4j1b1q=model_mjj_mu1l4j1b1q_constr, mu1l4j2q=model_mjj_mu1l4j2q_constr)");
 
    RooAbsPdf *model = w->pdf("model_combined_mjj");
    RooAbsPdf *modelc = w->pdf("model_combined_mjj_constr");
