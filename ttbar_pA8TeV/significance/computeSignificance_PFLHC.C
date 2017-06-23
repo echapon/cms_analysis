@@ -15,29 +15,91 @@ using namespace RooStats;
 using namespace std;
 
 int nCPU = 4;
-double initialGuess = 54.;
+double initialGuess = 64.;
 
-void computeSignificance_PFLHC(const char *filename="finalfitworkskace_v2.root") {
+// systs
+double ebval = 0.59;
+double eberr = 0.059;
+double jsferr = 0.036;
+double f_smjj_err = 0.02;
+
+void computeSignificance_PFLHC(const char *filename="finalfitworkskace_v2.root", bool addsyst=true) {
    TFile *f = TFile::Open(filename);
    RooWorkspace *w = (RooWorkspace*) f->Get("w");
    
-   // the constraint
-   RooGaussian ebconstraint("ebconstraint_pdf","ebconstraint_pdf",*(w->var("eb")),RooConst(0.59),RooConst(0.059)) ;
+   // the eb constraint
+   RooGaussian ebconstraint("ebconstraint_pdf","ebconstraint_pdf",
+         *(w->var("eb")),
+         RooConst(ebval),
+         RooConst(eberr)) ;
    w->import(ebconstraint);
+
+   // other constraints
+   if (addsyst) {
+      double val = w->var("jsf")->getVal();
+      RooGaussian jsfconstraint("jsfconstraint_pdf","jsfconstraint_pdf",
+            *(w->var("jsf")), RooConst(val), RooConst(jsferr*val)) ;
+      w->var("jsf")->setConstant(kFALSE);
+      w->import(jsfconstraint);
+
+      val = w->var("f_smjj_e1l4j2b")->getVal();
+      RooGaussian f_smjj_e1l4j2bconstraint("f_smjj_e1l4j2bconstraint_pdf","f_smjj_e1l4j2bconstraint_pdf",*(w->var("f_smjj_e1l4j2b")),RooConst(val),RooConst(f_smjj_err*val)) ;
+      w->var("f_smjj_e1l4j2b")->setConstant(kFALSE);
+      w->import(f_smjj_e1l4j2bconstraint);
+      
+      val = w->var("f_smjj_e1l4j1b1q")->getVal();
+      RooGaussian f_smjj_e1l4j1b1qconstraint("f_smjj_e1l4j1b1qconstraint_pdf","f_smjj_e1l4j1b1qconstraint_pdf",*(w->var("f_smjj_e1l4j1b1q")),RooConst(val),RooConst(f_smjj_err*val)) ;
+      w->var("f_smjj_e1l4j1b1q")->setConstant(kFALSE);
+      w->import(f_smjj_e1l4j1b1qconstraint);
+      
+      val = w->var("f_smjj_e1l4j2q")->getVal();
+      RooGaussian f_smjj_e1l4j2qconstraint("f_smjj_e1l4j2qconstraint_pdf","f_smjj_e1l4j2qconstraint_pdf",*(w->var("f_smjj_e1l4j2q")),RooConst(val),RooConst(f_smjj_err*val)) ;
+      w->var("f_smjj_e1l4j2q")->setConstant(kFALSE);
+      w->import(f_smjj_e1l4j2qconstraint);
+
+      val = w->var("f_smjj_mu1l4j2b")->getVal();
+      RooGaussian f_smjj_mu1l4j2bconstraint("f_smjj_mu1l4j2bconstraint_pdf","f_smjj_mu1l4j2bconstraint_pdf",*(w->var("f_smjj_mu1l4j2b")),RooConst(val),RooConst(f_smjj_err*val)) ;
+      w->var("f_smjj_mu1l4j2b")->setConstant(kFALSE);
+      w->import(f_smjj_mu1l4j2bconstraint);
+      
+      val = w->var("f_smjj_mu1l4j1b1q")->getVal();
+      RooGaussian f_smjj_mu1l4j1b1qconstraint("f_smjj_mu1l4j1b1qconstraint_pdf","f_smjj_mu1l4j1b1qconstraint_pdf",*(w->var("f_smjj_mu1l4j1b1q")),RooConst(val),RooConst(val*f_smjj_err)) ;
+      w->var("f_smjj_mu1l4j1b1q")->setConstant(kFALSE);
+      w->import(f_smjj_mu1l4j1b1qconstraint);
+      
+      val = w->var("f_smjj_mu1l4j2q")->getVal();
+      RooGaussian f_smjj_mu1l4j2qconstraint("f_smjj_mu1l4j2qconstraint_pdf","f_smjj_mu1l4j2qconstraint_pdf",*(w->var("f_smjj_mu1l4j2q")),RooConst(val),RooConst(f_smjj_err*val)) ;
+      w->var("f_smjj_mu1l4j2q")->setConstant(kFALSE);
+      w->import(f_smjj_mu1l4j2qconstraint);
+
+      // now the total constraint
+      w->factory("PROD::constraints_all("
+         "ebconstraint_pdf,jsfconstraint_pdf,"
+         "f_smjj_e1l4j2bconstraint_pdf,f_smjj_e1l4j1b1qconstraint_pdf,f_smjj_e1l4j2qconstraint_pdf,"
+         "f_smjj_mu1l4j2bconstraint_pdf,f_smjj_mu1l4j1b1qconstraint_pdf,f_smjj_mu1l4j2qconstraint_pdf"
+         ")");
+   } else {
+      RooGaussian *constraints_all = new RooGaussian(ebconstraint,"constraints_all");
+      w->import(*constraints_all);
+   }
+
+   RooAbsPdf *constraints_all = w->pdf("constraints_all");
 
    // Multiply constraint with p.d.f
    // for each component of the multi pdf
-   w->factory("PROD::model_mjj_e1l4j2b_ebconstr(model_mjj_e1l4j2b, ebconstraint_pdf)");
-   w->factory("PROD::model_mjj_e1l4j1b1q_ebconstr(model_mjj_e1l4j1b1q, ebconstraint_pdf)");
-   w->factory("PROD::model_mjj_e1l4j2q_ebconstr(model_mjj_e1l4j2q, ebconstraint_pdf)");
-   w->factory("PROD::model_mjj_mu1l4j2b_ebconstr(model_mjj_mu1l4j2b, ebconstraint_pdf)");
-   w->factory("PROD::model_mjj_mu1l4j1b1q_ebconstr(model_mjj_mu1l4j1b1q, ebconstraint_pdf)");
-   w->factory("PROD::model_mjj_mu1l4j2q_ebconstr(model_mjj_mu1l4j2q, ebconstraint_pdf)");
-   w->factory("SIMUL::model_combined_mjj_ebconstr(sample, e1l4j2b=model_mjj_e1l4j2b_ebconstr, e1l4j1b1q=model_mjj_e1l4j1b1q_ebconstr, e1l4j2q=model_mjj_e1l4j2q_ebconstr, mu1l4j2b=model_mjj_mu1l4j2b_ebconstr, mu1l4j1b1q=model_mjj_mu1l4j1b1q_ebconstr, mu1l4j2q=model_mjj_mu1l4j2q_ebconstr)");
+   w->factory("PROD::model_mjj_e1l4j2b_constr(model_mjj_e1l4j2b, constraints_all)");
+   w->factory("PROD::model_mjj_e1l4j1b1q_constr(model_mjj_e1l4j1b1q, constraints_all)");
+   w->factory("PROD::model_mjj_e1l4j2q_constr(model_mjj_e1l4j2q, constraints_all)");
+   w->factory("PROD::model_mjj_mu1l4j2b_constr(model_mjj_mu1l4j2b, constraints_all)");
+   w->factory("PROD::model_mjj_mu1l4j1b1q_constr(model_mjj_mu1l4j1b1q, constraints_all)");
+   w->factory("PROD::model_mjj_mu1l4j2q_constr(model_mjj_mu1l4j2q, constraints_all)");
+   w->factory("SIMUL::model_combined_mjj_constr(sample, e1l4j2b=model_mjj_e1l4j2b_constr, e1l4j1b1q=model_mjj_e1l4j1b1q_constr, e1l4j2q=model_mjj_e1l4j2q_constr, mu1l4j2b=model_mjj_mu1l4j2b_constr, mu1l4j1b1q=model_mjj_mu1l4j1b1q_constr, mu1l4j2q=model_mjj_mu1l4j2q_constr)");
 
    RooAbsPdf *model = w->pdf("model_combined_mjj");
-   RooAbsPdf *modelc = w->pdf("model_combined_mjj_ebconstr");
+   RooAbsPdf *modelc = w->pdf("model_combined_mjj_constr");
 
+   // w->Print();
+   // return;
 
 
    RooDataSet *data = (RooDataSet*) w->data("data");
@@ -87,22 +149,22 @@ void computeSignificance_PFLHC(const char *filename="finalfitworkskace_v2.root")
    // plotInt.Draw();
    // dataCanvas.SaveAs("interval.pdf");
 
-   // do the scan by hand
-   RooAbsReal *nll = modelc->createNLL(*data,Extended(kTRUE),NumCPU(nCPU));
+   // // do the scan by hand
+   // RooAbsReal *nll = modelc->createNLL(*data,Extended(kTRUE),NumCPU(nCPU));
 
-   double x[20],nllval[20];
-   for (int i=0; i<20; i++) {
-      x[i] = 50+i;
-      thePoi->setVal(x[i]);
-      thePoi->setConstant(kTRUE);
-      RooMinuit *minuit = new RooMinuit(*nll);
-      minuit->migrad();
-      minuit->minos(*thePoi);
-      nllval[i] = nll->getVal();
-   }
-   thePoi->setConstant(kFALSE);
+   // double x[20],nllval[20];
+   // for (int i=0; i<20; i++) {
+   //    x[i] = 50+i;
+   //    thePoi->setVal(x[i]);
+   //    thePoi->setConstant(kTRUE);
+   //    RooMinuit *minuit = new RooMinuit(*nll);
+   //    minuit->migrad();
+   //    minuit->minos(*thePoi);
+   //    nllval[i] = nll->getVal();
+   // }
+   // thePoi->setConstant(kFALSE);
 
-   for (int i=0; i<20; i++) {
-      cout << x[i] << " " << nllval[i] << endl;
-   }
+   // for (int i=0; i<20; i++) {
+   //    cout << x[i] << " " << nllval[i] << endl;
+   // }
 }
