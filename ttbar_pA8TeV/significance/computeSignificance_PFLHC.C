@@ -111,6 +111,8 @@ void computeSignificance_PFLHC(const char *filename="finalfitworkskace_v2.root",
    HypoTestResult *r = pl2.GetHypoTest();
    r->Print();
 
+   cout << "Nsig for electrons:" << w->function("Nsig_e")->getVal() << " and for muons: " << w->function("Nsig_mu")->getVal() << endl;
+
    //  //Get the interval
    // w->loadSnapshot("altpars");
 

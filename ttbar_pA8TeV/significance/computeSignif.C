@@ -1,8 +1,13 @@
 #include "StandardHypoTestDemo.C"
+#include "RooMsgService.h"
 
-int nCPU = 4;
-double eb0 = 0.59;
+bool addsyst = true;
+int nCPU = 1;
+double initialGuess = 64.;
+double ebval = 0.59;
 double eberr = 0.059;
+double jsferr = 0.036;
+double f_smjj_err = 0.02;
 
 void setConstant(RooWorkspace *w) {
    RooArgSet allVars = w->allVars();
@@ -25,7 +30,7 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
                           const char* dataName = "data",
                           int calcType = 0, /* 0 freq 1 hybrid, 2 asymptotic */
                           int testStatType = 3,   /* 0 LEP, 1 TeV, 2 LHC, 3 LHC - one sided*/
-                          int ntoys = 1000,
+                          int ntoys = 2000,
                           bool useNC = false,
                           const char * nuisPriorName = 0)
 {
@@ -53,28 +58,58 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    // load values from combined fit
    w->loadSnapshot("fitresult_combined");
    // set expected cross section
-   // optHT.poiValue = 56.6;                    // change poi snapshot value for S+B model (needed for expected p0 values)
+   optHT.poiValue = 56.6;                    // change poi snapshot value for S+B model (needed for expected p0 values)
 
    // C r e a t e   c o n s t r a i n t   p d f 
    // -----------------------------------------
 
-   // Construct Gaussian constraint p.d.f on parameter eb at 0.59 with resolution of 0.1
-   // the constraint
-   w->factory(Form("Gaussian::ebconstraint_pdf(eb,eb0[%f,0,1],%f)",eb0,eberr));
-   w->var("eb0")->setConstant(kTRUE);
+   // the eb constraint
+   RooGaussian ebconstraint("ebconstraint_pdf","ebconstraint_pdf",
+         *(w->var("eb")),
+         RooConst(ebval),
+         RooConst(eberr)) ;
+   w->import(ebconstraint);
 
-   // Multiply constraint with p.d.f
-   // for each component of the multi pdf
-   w->factory("PROD::model_mjj_e1l4j2b_ebconstr(model_mjj_e1l4j2b, ebconstraint_pdf)");
-   w->factory("PROD::model_mjj_e1l4j1b1q_ebconstr(model_mjj_e1l4j1b1q, ebconstraint_pdf)");
-   w->factory("PROD::model_mjj_e1l4j2q_ebconstr(model_mjj_e1l4j2q, ebconstraint_pdf)");
-   w->factory("PROD::model_mjj_mu1l4j2b_ebconstr(model_mjj_mu1l4j2b, ebconstraint_pdf)");
-   w->factory("PROD::model_mjj_mu1l4j1b1q_ebconstr(model_mjj_mu1l4j1b1q, ebconstraint_pdf)");
-   w->factory("PROD::model_mjj_mu1l4j2q_ebconstr(model_mjj_mu1l4j2q, ebconstraint_pdf)");
-   w->factory("SIMUL::model_combined_mjj_ebconstr(sample, e1l4j2b=model_mjj_e1l4j2b_ebconstr, e1l4j1b1q=model_mjj_e1l4j1b1q_ebconstr, e1l4j2q=model_mjj_e1l4j2q_ebconstr, mu1l4j2b=model_mjj_mu1l4j2b_ebconstr, mu1l4j1b1q=model_mjj_mu1l4j1b1q_ebconstr, mu1l4j2q=model_mjj_mu1l4j2q_ebconstr)");
+   // other constraints
+   if (addsyst) {
+      double val = w->var("jsf")->getVal();
+      RooGaussian jsfconstraint("jsfconstraint_pdf","jsfconstraint_pdf",
+            *(w->var("jsf")), RooConst(val), RooConst(jsferr*val)) ;
+      w->var("jsf")->setConstant(kFALSE);
+      w->import(jsfconstraint);
+
+      // constraints on the correct/wrong fractions
+      w->factory(Form("Gaussian::thetaconstraint(theta[1,0,2],theta0[1],thetaerr[%f])",f_smjj_err));
+
+      // now the total constraint
+      w->factory("PROD::constraints_all(ebconstraint_pdf,jsfconstraint_pdf,thetaconstraint)");
+
+      // make the modified model
+      w->factory("PROD::model_mjj_e1l4j2b_constr(model_mjj_e1l4j2b, constraints_all)");
+      w->factory("PROD::model_mjj_e1l4j1b1q_constr(model_mjj_e1l4j1b1q, constraints_all)");
+      w->factory("PROD::model_mjj_e1l4j2q_constr(model_mjj_e1l4j2q, constraints_all)");
+      w->factory("PROD::model_mjj_mu1l4j2b_constr(model_mjj_mu1l4j2b, constraints_all)");
+      w->factory("PROD::model_mjj_mu1l4j1b1q_constr(model_mjj_mu1l4j1b1q, constraints_all)");
+      w->factory("PROD::model_mjj_mu1l4j2q_constr(model_mjj_mu1l4j2q, constraints_all)");
+      w->factory("SIMUL::model_combined_mjj_constr0(sample, e1l4j2b=model_mjj_e1l4j2b_constr, e1l4j1b1q=model_mjj_e1l4j1b1q_constr, e1l4j2q=model_mjj_e1l4j2q_constr, mu1l4j2b=model_mjj_mu1l4j2b_constr, mu1l4j1b1q=model_mjj_mu1l4j1b1q_constr, mu1l4j2q=model_mjj_mu1l4j2q_constr)");
+      w->factory("EDIT::model_combined_mjj_constr1(model_combined_mjj_constr0,f_smjj_e1l4j2b=expr('f_smjj_e1l4j2b*theta',f_smjj_e1l4j2b,theta))");
+      w->factory("EDIT::model_combined_mjj_constr2(model_combined_mjj_constr1,f_smjj_e1l4j1b1q=expr('f_smjj_e1l4j1b1q*theta',f_smjj_e1l4j1b1q,theta))");
+      w->factory("EDIT::model_combined_mjj_constr3(model_combined_mjj_constr2,f_smjj_e1l4j2q=expr('f_smjj_e1l4j2q*theta',f_smjj_e1l4j2q,theta))");
+      w->factory("EDIT::model_combined_mjj_constr4(model_combined_mjj_constr3,f_smjj_mu1l4j2b=expr('f_smjj_mu1l4j2b*theta',f_smjj_mu1l4j2b,theta))");
+      w->factory("EDIT::model_combined_mjj_constr5(model_combined_mjj_constr4,f_smjj_mu1l4j1b1q=expr('f_smjj_mu1l4j1b1q*theta',f_smjj_mu1l4j1b1q,theta))");
+      w->factory("EDIT::model_combined_mjj_constr(model_combined_mjj_constr5,f_smjj_mu1l4j2q=expr('f_smjj_mu1l4j2q*theta',f_smjj_mu1l4j2q,theta))");
+   } else {
+      w->factory("PROD::model_mjj_e1l4j2b_constr(model_mjj_e1l4j2b, ebconstraint)");
+      w->factory("PROD::model_mjj_e1l4j1b1q_constr(model_mjj_e1l4j1b1q, ebconstraint)");
+      w->factory("PROD::model_mjj_e1l4j2q_constr(model_mjj_e1l4j2q, ebconstraint)");
+      w->factory("PROD::model_mjj_mu1l4j2b_constr(model_mjj_mu1l4j2b, ebconstraint)");
+      w->factory("PROD::model_mjj_mu1l4j1b1q_constr(model_mjj_mu1l4j1b1q, ebconstraint)");
+      w->factory("PROD::model_mjj_mu1l4j2q_constr(model_mjj_mu1l4j2q, ebconstraint)");
+      w->factory("SIMUL::model_combined_mjj_constr(sample, e1l4j2b=model_mjj_e1l4j2b_constr, e1l4j1b1q=model_mjj_e1l4j1b1q_constr, e1l4j2q=model_mjj_e1l4j2q_constr, mu1l4j2b=model_mjj_mu1l4j2b_constr, mu1l4j1b1q=model_mjj_mu1l4j1b1q_constr, mu1l4j2q=model_mjj_mu1l4j2q_constr)");
+   }
 
    RooAbsPdf *model = w->pdf("model_combined_mjj");
-   RooAbsPdf *modelc = w->pdf("model_combined_mjj_ebconstr");
+   RooAbsPdf *modelc = w->pdf("model_combined_mjj_constr");
 
    w->Print();
 
@@ -107,6 +142,10 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    //    }
    //    theVar = (RooRealVar*) it->Next();
    // }
+   if (addsyst) {
+      nuis->add(*(w->var("jsf")));
+      nuis->add(*(w->var("theta")));
+   }
    msb->SetNuisanceParameters(*nuis);
 
    // observables
