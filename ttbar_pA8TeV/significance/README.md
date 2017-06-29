@@ -1,0 +1,5 @@
+- computeSignificance_PFLHC.C: compute significance using a likelihood scan. Also includes code to plot the likelihood scan at the end (with a pre-defined class or by hand)
+- computeSignif.C: compute singificance using hypothesis testing (toys or asymptotic approximation; default = toys)
+- submit_jobs_signif.sh: submits jobs on lxplus for the toys for the significance with toys
+  - combine all the outputs using hadd_hypotestresult.C: instructions to compile it given in the beginning of the file
+- test the statistical uncertainty using a toy study: coverage_nosyst.C
