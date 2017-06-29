@@ -3,10 +3,10 @@
 
 bool addsyst = true;
 int nCPU = 1;
-double initialGuess = 64.;
-double ebval = 0.59;
-double eberr = 0.059;
-double jsferr = 0.036;
+double initialGuess = 47.;
+double ebval = 0.595;
+double eberr = 0.0595;
+double jsferr = 0.034;
 double f_smjj_err = 0.02;
 
 void setConstant(RooWorkspace *w) {
@@ -22,7 +22,7 @@ void setConstant(RooWorkspace *w) {
    }
 };
 
-void computeSignif(const char* filename = "finalfitworkskace_v2.root",
+void computeSignif(const char* filename = "finalfitworkspace_uncorrwjets_constantjsf_0.root",
                           int seed = -1,
                           const char* workspaceName = "w",
                           const char* modelSBName = "modelSB",
@@ -58,7 +58,7 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    // load values from combined fit
    w->loadSnapshot("fitresult_combined");
    // set expected cross section
-   optHT.poiValue = 56.6;                    // change poi snapshot value for S+B model (needed for expected p0 values)
+   optHT.poiValue = 57.5;                    // change poi snapshot value for S+B model (needed for expected p0 values)
 
    // C r e a t e   c o n s t r a i n t   p d f 
    // -----------------------------------------
@@ -160,7 +160,7 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
       msb->SetSnapshot(*(w->getSnapshot("fitresult_combined")));
       // setConstant(w);
    } else { // else produce it
-      thePoi->setVal(54.);
+      thePoi->setVal(47.);
       thePoi->setConstant(kTRUE);
       modelc->fitTo(*data,NumCPU(nCPU),Minos(RooArgSet(*thePoi)),Extended()); // add minos
       thePoi->setConstant(kFALSE);
@@ -203,7 +203,6 @@ void computeSignif(const char* filename = "finalfitworkskace_v2.root",
    w->var("xsec")->setConstant(kFALSE);
    RooArgSet *newpars = modelc->getParameters(*(w->var("mjj")));
    w->saveSnapshot("fitresults_combined_null",*newpars,kTRUE);
-   mb->SetSnapshot(*newpars);
    // mb->SetSnapshot(*((RooArgSet*) newpars->selectByName("xsec")));
    mb->SetSnapshot(*newpars);
    w->import(*mb);

@@ -15,15 +15,15 @@ using namespace RooStats;
 using namespace std;
 
 int nCPU = 4;
-double initialGuess = 64.;
+double initialGuess = 47.;
 
 // systs
-double ebval = 0.59;
-double eberr = 0.059;
-double jsferr = 0.036;
+double ebval = 0.595;
+double eberr = 0.0595;
+double jsferr = 0.034;
 double f_smjj_err = 0.02;
 
-void computeSignificance_PFLHC(const char *filename="finalfitworkskace_v2.root", bool addsyst=true) {
+void computeSignificance_PFLHC(const char *filename="finalfitworkspace_uncorrwjets_constantjsf_0.root", bool addsyst=true) {
    TFile *f = TFile::Open(filename);
    RooWorkspace *w = (RooWorkspace*) f->Get("w");
    
@@ -34,9 +34,11 @@ void computeSignificance_PFLHC(const char *filename="finalfitworkskace_v2.root",
          RooConst(eberr)) ;
    w->import(ebconstraint);
 
+   w->loadSnapshot("fitresult_combined");
+
    // other constraints
    if (addsyst) {
-      double val = w->var("jsf")->getVal();
+      double val = 1;
       RooGaussian jsfconstraint("jsfconstraint_pdf","jsfconstraint_pdf",
             *(w->var("jsf")), RooConst(val), RooConst(jsferr*val)) ;
       w->var("jsf")->setConstant(kFALSE);
@@ -81,6 +83,7 @@ void computeSignificance_PFLHC(const char *filename="finalfitworkskace_v2.root",
    // w->Print();
    // return;
 
+   // w->var("theta")->setConstant();
 
    RooDataSet *data = (RooDataSet*) w->data("data");
    RooRealVar *thePoi = (RooRealVar*) w->var("xsec");
@@ -113,23 +116,25 @@ void computeSignificance_PFLHC(const char *filename="finalfitworkskace_v2.root",
 
    cout << "Nsig for electrons:" << w->function("Nsig_e")->getVal() << " and for muons: " << w->function("Nsig_mu")->getVal() << endl;
 
-   //  //Get the interval
-   // w->loadSnapshot("altpars");
+    //Get the interval
+   w->loadSnapshot("altpars");
 
-   // // this doesn't work... gives a weird shape with a second minimum at ~64
-   // LikelihoodInterval* plInt = pl2.GetInterval();
-   // cout << "PLC interval is [" << plInt->LowerLimit(*thePoi) << ", " << 
-   //    plInt->UpperLimit(*thePoi) << "]" << endl;
+   // this doesn't work... gives a weird shape with a second minimum at ~64
+   LikelihoodInterval* plInt = pl2.GetInterval();
+   plInt->SetConfidenceLevel(0.682);
+   cout << "PLC interval is [" << plInt->LowerLimit(*thePoi) << ", " << 
+      plInt->UpperLimit(*thePoi) << "]" << endl;
 
-   // TCanvas dataCanvas("dataCanvas");
+   TCanvas dataCanvas("dataCanvas");
 
-   // LikelihoodIntervalPlot plotInt((LikelihoodInterval*)plInt);
-   // plotInt.SetTitle("Profile Likelihood Ratio");
-   // plotInt.SetRange(0,100);
-   // plotInt.SetMaximum(3.);
-   // w->loadSnapshot("altpars");
-   // plotInt.Draw();
-   // dataCanvas.SaveAs("interval.pdf");
+   LikelihoodIntervalPlot plotInt((LikelihoodInterval*)plInt);
+   plotInt.SetTitle("Profile Likelihood Ratio");
+   plotInt.SetRange(0,100);
+   plotInt.SetMaximum(3.);
+   w->loadSnapshot("altpars");
+   plotInt.Draw();
+   dataCanvas.SaveAs("interval.pdf");
+   dataCanvas.SaveAs("interval.root");
 
    // // do the scan by hand
    // RooAbsReal *nll = modelc->createNLL(*data,Extended(kTRUE),NumCPU(nCPU));
