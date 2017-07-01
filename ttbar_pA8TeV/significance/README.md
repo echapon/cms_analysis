@@ -2,4 +2,6 @@
 - computeSignif.C: compute singificance using hypothesis testing (toys or asymptotic approximation; default = toys)
 - submit_jobs_signif.sh: submits jobs on lxplus for the toys for the significance with toys
   - combine all the outputs using hadd_hypotestresult.C: instructions to compile it given in the beginning of the file
-- test the statistical uncertainty using a toy study: coverage_nosyst.C
+- test the statistical uncertainty using a toy study: coverage_nosyst_noroomcstudy.C
+  - there is also a .sh script for use in lxbatch
+  - careful: the version using RooMCStudy does not work! It's not saving the output...
