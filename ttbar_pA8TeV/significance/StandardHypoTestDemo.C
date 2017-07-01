@@ -131,7 +131,7 @@ void StandardHypoTestDemo(RooWorkspace *w,
    ProfileLikelihoodTestStat::SetAlwaysReuseNLL(true);
    RatioOfProfiledLikelihoodsTestStat::SetAlwaysReuseNLL(true);
 
-   if (seed>0) RooRandom::randomGenerator()->SetSeed(0);
+   if (seed>0) RooRandom::randomGenerator()->SetSeed(seed);
 
    // to change minimizers
    // ~~~{.bash}
