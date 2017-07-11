@@ -131,7 +131,7 @@ void StandardHypoTestDemo(RooWorkspace *w,
    ProfileLikelihoodTestStat::SetAlwaysReuseNLL(true);
    RatioOfProfiledLikelihoodsTestStat::SetAlwaysReuseNLL(true);
 
-   if (seed>0) RooRandom::randomGenerator()->SetSeed(0);
+   if (seed>0) RooRandom::randomGenerator()->SetSeed(seed);
 
    // to change minimizers
    // ~~~{.bash}
@@ -417,7 +417,7 @@ void StandardHypoTestDemo(RooWorkspace *w,
 
       // write to a file the results
       const char *  calcTypeName = (calcType == 0) ? "Freq" : (calcType == 1) ? "Hybr" : "Asym";
-      TString resultFileName = TString::Format("%s_HypoTest_ts%d_",calcTypeName,testStatType);
+      TString resultFileName = TString::Format("%s_HypoTest_ts%d_%d_",calcTypeName,testStatType,seed);
       //strip the / from the filename
 
       name.Replace(0, name.Last('/')+1, "");
