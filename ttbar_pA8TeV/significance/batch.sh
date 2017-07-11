@@ -7,7 +7,10 @@ workdir=/tmp/echapon/tmp_$SEED
 mkdir -p $workdir
 cd $workdir
 
+echo SEED $SEED
+
 cp $basedir/*C $basedir/*root .
 
-root -l -b -q computeSignif.C'("finalfitworkspace_uncorrwjets_constantjsf_0.root",'$SEED')' 2>&1 | tail -n100 2>&1
+echo "root -l -b -q computeSignif.C'(\"fit_finalworkspace_wmodel0_0_20170706.root\",'${SEED}')' 2>&1 | tail -n100 2>&1"
+root -l -b -q computeSignif.C'("fit_finalworkspace_wmodel0_0_20170706.root",'${SEED}')' 2>&1 | tail -n100 2>&1
 cp Freq* $basedir
