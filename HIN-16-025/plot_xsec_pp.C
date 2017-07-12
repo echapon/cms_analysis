@@ -8,13 +8,13 @@ TH1F* makeHist(TH1F* hc, TH1F* he) {
    return ans;
 }
 
-TH1F* sum(TH1F* h1, TH1F* h2) {
+TH1F* sum(TH1F* h1, TH1F* h2, double s1, double s2) {
    int n = h1->GetNbinsX();
    TH1F *ans = (TH1F*) h1->Clone(TString(h1->GetName()) + "_clone");
    for (int i=0; i<=n+1; i++) {
       int i2 = h2->FindBin(h1->GetBinCenter(i));
-      ans->SetBinContent(i,h1->GetBinContent(i)+h2->GetBinContent(i2));
-      ans->SetBinError(i,sqrt(pow(h1->GetBinError(i),2)+pow(h2->GetBinError(i2),2)));
+      ans->SetBinContent(i,h1->GetBinContent(i)*s1+h2->GetBinContent(i2)*s2);
+      ans->SetBinError(i,sqrt(pow(h1->GetBinError(i)*s1,2)+pow(h2->GetBinError(i2)*s2,2)));
    }
    return ans;
 }
@@ -24,11 +24,11 @@ void plot_xsec_pp() {
    // pbpb
    double ptlow_024_pbpb[9] = {6.5,7.5,8.5,9.5,11,13,15,20,30};
    double pthigh_024_pbpb[9] = {7.5,8.5,9.5,11,13,15,20,30,50};
-   double xsec_024_pbpb[9] = {3.494,1.805,0.943,0.477,0.203,0.089,0.027,0.005,0.000};
-   double xsecstat_024_pbpb[9] = {0.110,0.048,0.024,0.011,0.005,0.002,0.001,0.000,0.000};
-   double xsecsyst_024_pbpb[9] = {0.259,0.106,0.046,0.021,0.009,0.004,0.001,0.000,0.000};
-   double br = 5.961e-2;
-   double dy = 4.8;
+   double xsec_024_pbpb[9] = {10.034,5.219,2.829,1.443,0.595,0.247,0.074,0.011,0.001};
+   double xsecstat_024_pbpb[9] = {0.117,0.053,0.028,0.013,0.006,0.003,0.001,0.000,0.000};
+   double xsecsyst_024_pbpb[9] = {0.580,0.256,0.119,0.053,0.020,0.008,0.002,0.000,0.000};
+   double br = 1e-3; // nb to mub
+   double dy = 1.;//4.8;
 
    TGraphErrors *tgpbpb_stat = new TGraphErrors(9);
    for (int i=0; i<9; i++) {
@@ -82,13 +82,14 @@ void plot_xsec_pp() {
    TH1F *yp3 = makeHist(yp3c,yp3stat);
    TH1F *yp4 = makeHist(yp4c,yp4stat);
 
-   TH1F *y12 = sum(y1,y2);
-   TH1F *y123 = sum(y12,y3);
-   TH1F *y1234 = sum(y123,y4);
-   TH1F *z1 = sum(y1234,yp1);
-   TH1F *z12 = sum(z1,yp2);
-   TH1F *z123 = sum(z12,yp3);
-   TH1F *z1234 = sum(z123,yp4);
+   TH1F *y12 = sum(y1,y2,2.4-1.93,1.93-1.5); // we integrate by multiplying by dy
+   TH1F *y123 = sum(y12,y3,1.,1.5-0.9);
+   TH1F *y1234 = sum(y123,y4,1.,0.9);
+   TH1F *z1 = sum(y1234,yp1,1.,0.9);
+   TH1F *z12 = sum(z1,yp2,1.,1.5-0.9);
+   TH1F *z123 = sum(z12,yp3,1.,1.93-1.5);
+   TH1F *z1234 = sum(z123,yp4,1.,2.4-1.93);
+   z1234->Scale(1./2.4); // divide by d|y|
 
    z1234->SetLineColor(kBlue);
    z1234->SetMarkerColor(kBlue);
