@@ -67,8 +67,8 @@ void plot_xsec_pp_rap() {
    y12->Draw("same");
 
    // make the plot less ugly
-   tgpbpb_stat->GetHistogram()->GetXaxis()->SetTitle("p_{T}");
-   tgpbpb_stat->GetHistogram()->GetYaxis()->SetTitle("B #times d^{2}#sigma / dp_{T} d|y|");
+   tgpbpb_stat->GetHistogram()->GetXaxis()->SetTitle("p_{T} [GeV/c]");
+   tgpbpb_stat->GetHistogram()->GetYaxis()->SetTitle("B #times d^{2}#sigma / dp_{T} d|y| [#mub / GeV/c]");
    TLegend *tleg = new TLegend(0.6,0.6,0.9,0.9);
    tleg->SetBorderSize(0);
    tleg->SetHeader("6.5<p_{T}<50");
