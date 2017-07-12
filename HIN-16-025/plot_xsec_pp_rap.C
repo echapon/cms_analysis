@@ -21,6 +21,7 @@ TH1F* sum(TH1F* h1, TH1F* h2, double s1, double s2) {
 
 // main function
 void plot_xsec_pp_rap() {
+   TCanvas *c1 = new TCanvas();
    // pbpb
    double raplow_024_pbpb[6] = {0,0.4,0.8,1.2,1.6,2};
    double raphigh_024_pbpb[6] = {0.4,0.8,1.2,1.6,2,2.4};
@@ -64,4 +65,16 @@ void plot_xsec_pp_rap() {
    y12->SetLineColor(kBlue);
    y12->SetMarkerColor(kBlue);
    y12->Draw("same");
+
+   // make the plot less ugly
+   tgpbpb_stat->GetHistogram()->GetXaxis()->SetTitle("p_{T}");
+   tgpbpb_stat->GetHistogram()->GetYaxis()->SetTitle("B #times d^{2}#sigma / dp_{T} d|y|");
+   TLegend *tleg = new TLegend(0.6,0.6,0.9,0.9);
+   tleg->SetBorderSize(0);
+   tleg->SetHeader("6.5<p_{T}<50");
+   tleg->AddEntry(tgpbpb_stat,"16-025 (stat)","LP");
+   tleg->AddEntry(tgpbpb_syst,"16-025 (syst)","LP");
+   tleg->AddEntry(y12,"14-009 (stat)","LP");
+   tleg->Draw();
+   c1->SaveAs("plot_rap.pdf");
 }

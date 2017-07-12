@@ -21,6 +21,8 @@ TH1F* sum(TH1F* h1, TH1F* h2, double s1, double s2) {
 
 // main function
 void plot_xsec_pp() {
+   TCanvas *c1 = new TCanvas();
+
    // pbpb
    double ptlow_024_pbpb[9] = {6.5,7.5,8.5,9.5,11,13,15,20,30};
    double pthigh_024_pbpb[9] = {7.5,8.5,9.5,11,13,15,20,30,50};
@@ -94,4 +96,16 @@ void plot_xsec_pp() {
    z1234->SetLineColor(kBlue);
    z1234->SetMarkerColor(kBlue);
    z1234->Draw("same");
+
+   // make the plot less ugly
+   tgpbpb_stat->GetHistogram()->GetXaxis()->SetTitle("p_{T}");
+   tgpbpb_stat->GetHistogram()->GetYaxis()->SetTitle("B #times d^{2}#sigma / dp_{T} d|y|");
+   TLegend *tleg = new TLegend(0.6,0.6,0.9,0.9);
+   tleg->SetBorderSize(0);
+   tleg->SetHeader("|y|<2.4");
+   tleg->AddEntry(tgpbpb_stat,"16-025 (stat)","LP");
+   tleg->AddEntry(tgpbpb_syst,"16-025 (syst)","LP");
+   tleg->AddEntry(z1234,"14-009 (stat)","LP");
+   tleg->Draw();
+   c1->SaveAs("plot_pt.pdf");
 }
