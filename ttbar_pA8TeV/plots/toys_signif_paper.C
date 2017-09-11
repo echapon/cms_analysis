@@ -6,10 +6,10 @@ void toys_signif_paper()
   setTDRStyle();
 //=========Macro generated from canvas: c1/c1
 //=========  (Thu Sep  7 22:33:37 2017) by ROOT version6.08/06
-  int W = 600;
-  int H = 600;
-  int H_ref = 600; 
-  int W_ref = 600; 
+  int W = 800;
+  int H = 800;
+  int H_ref = 800; 
+  int W_ref = 800; 
 
   // references for T, B, L, R
   float T = 0.08*H_ref;
